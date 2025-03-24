@@ -10,9 +10,15 @@ class WordRepository @Inject constructor(
 ) {
     fun getAllWords(): Flow<List<WordEntity>> = wordDao.getAllWords()
     
-    suspend fun getRandomWords(limit: Int): List<WordEntity> = wordDao.getRandomWords(limit)
+    fun searchWords(query: String): Flow<List<WordEntity>> = wordDao.searchWords(query)
     
-    suspend fun insertWords(words: List<WordEntity>) = wordDao.insertWords(words)
+    suspend fun getWordById(id: Long): WordEntity? = wordDao.getWordById(id)
+    
+    suspend fun insertWord(word: WordEntity): Long = wordDao.insertWord(word)
     
     suspend fun updateWord(word: WordEntity) = wordDao.updateWord(word)
+    
+    suspend fun deleteWord(word: WordEntity) = wordDao.deleteWord(word)
+
+    suspend fun insertWords(words: List<WordEntity>) = wordDao.insertWords(words)
 } 

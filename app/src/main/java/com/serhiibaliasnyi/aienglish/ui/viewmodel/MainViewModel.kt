@@ -44,6 +44,12 @@ class MainViewModel @Inject constructor(
             initialValue = 0
         )
 
+    private val _selectedWord = MutableStateFlow<WordEntity?>(null)
+    val selectedWord: StateFlow<WordEntity?> = _selectedWord.asStateFlow()
+
+    private val _editMode = MutableStateFlow(false)
+    val editMode: StateFlow<Boolean> = _editMode.asStateFlow()
+
     fun filterWords(query: String) {
         _searchQuery.value = query
     }
@@ -58,6 +64,62 @@ class MainViewModel @Inject constructor(
             } catch (e: Exception) {
                 _importState.value = ImportState.Error(e.message ?: "Unknown error")
             }
+        }
+    }
+
+    fun selectWord(word: WordEntity) {
+        _selectedWord.value = word
+    }
+
+    fun startEditing() {
+        _editMode.value = true
+    }
+
+    fun cancelEditing() {
+        _editMode.value = false
+        _selectedWord.value = null
+    }
+
+    fun deleteSelectedWord() {
+        viewModelScope.launch {
+            _selectedWord.value?.let { word ->
+                repository.deleteWord(word)
+                _selectedWord.value = null
+            }
+        }
+    }
+
+    fun updateWord(
+        id: Long,
+        word: String,
+        translation: String,
+        transcription: String
+    ) {
+        viewModelScope.launch {
+            val updatedWord = WordEntity(
+                id = id,
+                word = word,
+                translation = translation,
+                transcription = transcription
+            )
+            repository.updateWord(updatedWord)
+            _editMode.value = false
+            _selectedWord.value = null
+        }
+    }
+
+    fun addNewWord(
+        word: String,
+        translation: String,
+        transcription: String
+    ) {
+        viewModelScope.launch {
+            val newWord = WordEntity(
+                word = word,
+                translation = translation,
+                transcription = transcription
+            )
+            repository.insertWord(newWord)
         }
     }
 }

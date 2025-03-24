@@ -20,18 +20,31 @@ class CsvImportService @Inject constructor(
                     while (reader.readLine()?.also { line = it } != null) {
                         val columns = line.split(";")
                         if (columns.size >= 4) {
-                            // Удаляем кавычки из всех полей
-                            val word = columns[0].trim().removeSurrounding("\"")
-                            val translation = columns[1].trim().removeSurrounding("\"")
-                            val transcription = columns[3].trim().removeSurrounding("\"")
-                                .removeSurrounding("[") // Если транскрипция в квадратных скобках
-                                .removeSurrounding("]") // удаляем и их тоже
+                            // Удаляем кавычки, HTML-теги и лишние пробелы
+                            val word = columns[0].trim()
+                                .removeSurrounding("\"")
+                                .replace("<br>", " ")
+                                .replace("  ", " ") // Убираем двойные пробелы, если они появились после удаления тегов
+                                .trim()
+                            
+                            val translation = columns[1].trim()
+                                .removeSurrounding("\"")
+                                .replace("<br>", " ")
+                                .replace("  ", " ")
+                                .trim()
+                            
+                            val transcription = columns[3].trim()
+                                .removeSurrounding("\"")
+                                .replace("<br>", " ")
+                                .replace("  ", " ")
+                                .trim()
+                                .removeSurrounding("[", "]")
                             
                             words.add(
                                 WordEntity(
                                     word = word,
                                     translation = translation,
-                                    transcription = "[$transcription]", // Добавляем скобки обратно для красивого отображения
+                                    transcription = "[$transcription]",
                                     lastReviewed = null,
                                     reviewCount = 0,
                                     difficulty = 0

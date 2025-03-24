@@ -15,6 +15,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.serhiibaliasnyi.aienglish.ui.theme.AiEnglishTheme
 import com.serhiibaliasnyi.aienglish.ui.viewmodel.ImportState
 import com.serhiibaliasnyi.aienglish.ui.viewmodel.MainViewModel
+import com.serhiibaliasnyi.aienglish.data.entity.WordEntity
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -37,6 +42,9 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
+    var showAddDialog by remember { mutableStateOf(false) }
+    val selectedWord by viewModel.selectedWord.collectAsState()
+    val editMode by viewModel.editMode.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     val words by viewModel.filteredWords.collectAsState()
     val importState by viewModel.importState.collectAsState()
@@ -83,38 +91,150 @@ fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
             }
         }
 
+        // Кнопка добавления нового слова
+        FloatingActionButton(
+            onClick = { showAddDialog = true },
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Добавить слово")
+        }
+
+        // Диалог добавления/редактирования
+        if (showAddDialog || editMode) {
+            WordDialog(
+                word = if (editMode) selectedWord else null,
+                isNew = !editMode,
+                onDismiss = {
+                    showAddDialog = false
+                    viewModel.cancelEditing()
+                },
+                onSave = { word, translation, transcription ->
+                    if (editMode) {
+                        selectedWord?.id?.let { id ->
+                            viewModel.updateWord(id, word, translation, transcription)
+                        }
+                    } else {
+                        viewModel.addNewWord(word, translation, transcription)
+                    }
+                }
+            )
+        }
+
         // Список слов
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(words) { word ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = word.word,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        word.transcription?.let { transcription ->
-                            Text(
-                                text = transcription,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        Text(
-                            text = word.translation,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                WordCard(
+                    word = word,
+                    onEdit = {
+                        viewModel.selectWord(word)
+                        viewModel.startEditing()
+                    },
+                    onDelete = {
+                        viewModel.selectWord(word)
+                        viewModel.deleteSelectedWord()
                     }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WordDialog(
+    word: WordEntity?,
+    isNew: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (String, String, String) -> Unit
+) {
+    var wordText by remember { mutableStateOf(word?.word ?: "") }
+    var translationText by remember { mutableStateOf(word?.translation ?: "") }
+    var transcriptionText by remember { mutableStateOf(word?.transcription?.removeSurrounding("[", "]") ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (isNew) "Добавить слово" else "Редактировать слово") },
+        text = {
+            Column {
+                TextField(
+                    value = wordText,
+                    onValueChange = { wordText = it },
+                    label = { Text("Слово") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = translationText,
+                    onValueChange = { translationText = it },
+                    label = { Text("Перевод") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextField(
+                    value = transcriptionText,
+                    onValueChange = { transcriptionText = it },
+                    label = { Text("Транскрипция") }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onSave(wordText, translationText, transcriptionText)
+                    onDismiss()
+                }
+            ) {
+                Text("Сохранить")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
+}
+
+@Composable
+fun WordCard(
+    word: WordEntity,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = word.word,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = word.transcription ?: "",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = word.translation,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Row {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = "Редактировать")
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Удалить")
                 }
             }
         }
