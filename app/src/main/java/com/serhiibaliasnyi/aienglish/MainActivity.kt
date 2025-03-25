@@ -32,6 +32,7 @@ import com.serhiibaliasnyi.aienglish.navigation.Screen
 import com.serhiibaliasnyi.aienglish.ui.screen.DictionaryScreen
 import com.serhiibaliasnyi.aienglish.ui.screen.TextGenerationScreen
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.material.icons.filled.VolumeUp
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -174,6 +175,9 @@ fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
                     onDelete = {
                         viewModel.selectWord(word)
                         viewModel.deleteSelectedWord()
+                    },
+                    onSpeak = {
+                        viewModel.speakWord(word.word)
                     }
                 )
             }
@@ -239,7 +243,8 @@ fun WordDialog(
 fun WordCard(
     word: WordEntity,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onSpeak: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -269,6 +274,9 @@ fun WordCard(
                 )
             }
             Row {
+                IconButton(onClick = onSpeak) {
+                    Icon(Icons.Default.VolumeUp, contentDescription = "Воспроизвести")
+                }
                 IconButton(onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = "Редактировать")
                 }

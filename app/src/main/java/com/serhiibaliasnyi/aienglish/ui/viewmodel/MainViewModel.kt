@@ -1,5 +1,8 @@
 package com.serhiibaliasnyi.aienglish.ui.viewmodel
 
+import android.app.Application
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.serhiibaliasnyi.aienglish.data.entity.WordEntity
@@ -15,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
+    private val application: Application,
     private val repository: WordRepository,
     private val csvImportService: CsvImportService,
     private val textGenerationRepository: TextGenerationRepository
@@ -62,6 +66,34 @@ class MainViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
+
+    private var textToSpeech: TextToSpeech? = null
+    private var isTtsReady = false
+
+    init {
+        initTextToSpeech()
+    }
+
+    private fun initTextToSpeech() {
+        textToSpeech = TextToSpeech(application) { status ->
+            isTtsReady = status == TextToSpeech.SUCCESS
+            if (isTtsReady) {
+                textToSpeech?.language = Locale.US
+            }
+        }
+    }
+
+    fun speakWord(word: String) {
+        if (isTtsReady) {
+            textToSpeech?.speak(word, TextToSpeech.QUEUE_FLUSH, null, null)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        textToSpeech?.stop()
+        textToSpeech?.shutdown()
+    }
 
     fun filterWords(query: String) {
         _searchQuery.value = query
