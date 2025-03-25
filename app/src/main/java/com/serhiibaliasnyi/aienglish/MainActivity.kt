@@ -20,6 +20,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material.icons.filled.Create
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.serhiibaliasnyi.aienglish.navigation.Screen
+import com.serhiibaliasnyi.aienglish.ui.screen.DictionaryScreen
+import com.serhiibaliasnyi.aienglish.ui.screen.TextGenerationScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -28,11 +39,39 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AiEnglishTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    MainScreen()
+                val navController = rememberNavController()
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
+
+                androidx.compose.material3.Scaffold(
+                    bottomBar = {
+                        NavigationBar {
+                            NavigationBarItem(
+                                icon = { Icon(Icons.Filled.List, contentDescription = "Dictionary") },
+                                label = { Text("Dictionary") },
+                                selected = currentRoute == Screen.Dictionary.route,
+                                onClick = { navController.navigate(Screen.Dictionary.route) }
+                            )
+                            NavigationBarItem(
+                                icon = { Icon(Icons.Filled.Create, contentDescription = "Generate Text") },
+                                label = { Text("Generate") },
+                                selected = currentRoute == Screen.TextGeneration.route,
+                                onClick = { navController.navigate(Screen.TextGeneration.route) }
+                            )
+                        }
+                    }
+                ) { paddingValues ->
+                    NavHost(
+                        navController = navController,
+                        startDestination = Screen.Dictionary.route
+                    ) {
+                        composable(Screen.Dictionary.route) {
+                            DictionaryScreen(paddingValues = paddingValues)
+                        }
+                        composable(Screen.TextGeneration.route) {
+                            TextGenerationScreen(paddingValues = paddingValues)
+                        }
+                    }
                 }
             }
         }

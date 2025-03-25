@@ -5,15 +5,19 @@ import androidx.lifecycle.viewModelScope
 import com.serhiibaliasnyi.aienglish.data.entity.WordEntity
 import com.serhiibaliasnyi.aienglish.data.repository.WordRepository
 import com.serhiibaliasnyi.aienglish.data.service.CsvImportService
+import com.serhiibaliasnyi.aienglish.data.repository.TextGenerationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val repository: WordRepository,
-    private val csvImportService: CsvImportService
+    private val csvImportService: CsvImportService,
+    private val textGenerationRepository: TextGenerationRepository
 ) : ViewModel() {
 
     private val _importState = MutableStateFlow<ImportState>(ImportState.Initial)
@@ -49,6 +53,15 @@ class MainViewModel @Inject constructor(
 
     private val _editMode = MutableStateFlow(false)
     val editMode: StateFlow<Boolean> = _editMode.asStateFlow()
+
+    private val _generatedText = MutableStateFlow<String?>(null)
+    val generatedText: StateFlow<String?> = _generatedText
+
+    private val _selectedWords = MutableStateFlow<List<WordEntity>>(emptyList())
+    val selectedWords: StateFlow<List<WordEntity>> = _selectedWords
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
     fun filterWords(query: String) {
         _searchQuery.value = query
@@ -121,6 +134,27 @@ class MainViewModel @Inject constructor(
             )
             repository.insertWord(newWord)
         }
+    }
+
+    fun generateDailyPractice() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val words = textGenerationRepository.getRandomWords(300)
+                _selectedWords.value = words
+                val text = textGenerationRepository.generateText(words)
+                _generatedText.value = text
+            } catch (e: Exception) {
+                // Обработка ошибок
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun clearGeneratedText() {
+        _generatedText.value = null
+        _selectedWords.value = emptyList()
     }
 }
 

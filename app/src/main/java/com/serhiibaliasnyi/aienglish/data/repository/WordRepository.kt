@@ -4,7 +4,9 @@ import com.serhiibaliasnyi.aienglish.data.dao.WordDao
 import com.serhiibaliasnyi.aienglish.data.entity.WordEntity
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class WordRepository @Inject constructor(
     private val wordDao: WordDao
 ) {
@@ -21,4 +23,8 @@ class WordRepository @Inject constructor(
     suspend fun deleteWord(word: WordEntity) = wordDao.deleteWord(word)
 
     suspend fun insertWords(words: List<WordEntity>) = wordDao.insertWords(words)
+
+    suspend fun getRandomWords(count: Int): List<WordEntity> {
+        return wordDao.getRandomWords(count)
+    }
 } 

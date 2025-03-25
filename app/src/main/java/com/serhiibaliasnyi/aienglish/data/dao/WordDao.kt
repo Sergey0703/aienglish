@@ -26,4 +26,7 @@ interface WordDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWords(words: List<WordEntity>)
+
+    @Query("SELECT * FROM words ORDER BY RANDOM() LIMIT :count")
+    suspend fun getRandomWords(count: Int): List<WordEntity>
 } 
